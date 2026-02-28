@@ -3,10 +3,7 @@
 # Conditions:
 # - Pushing any commits triggers building.
 # - Pushing commits to "master" produces a snapshot.
-#
-# Q: This workflow will not triggered by releases. What if I want to release a new no-snapshot version?
-# A: Manually create a release on GitHub with your customized release note, then download and upload
-#    the artifacts from the recent snapshot.
+# - Pushing a tag produces a release with the tag name as version.
 #
 
 name: Build, and may release a new snapshot
@@ -17,7 +14,7 @@ on:
   workflow_dispatch:
 
 env:
-  tag_name: "snapshot"
+  tag_name: ${{ github.ref_type == 'tag' && github.ref_name || 'snapshot' }}
 
 jobs:
   build_artifacts:
@@ -61,7 +58,7 @@ jobs:
   make_release:
     # https://docs.github.com/en/actions/learn-github-actions/contexts
     # https://docs.github.com/actions/learn-github-actions/expressions
-    if: ${{ github.ref == 'refs/heads/master' }}
+    if: ${{ github.ref == 'refs/heads/master' || github.ref_type == 'tag' }}
 
     needs: build_artifacts
 
@@ -87,6 +84,7 @@ jobs:
         name: gohls-${{ env.tag_name }}-all_in_one
 
     - name: Delete existing tag '${{ env.tag_name }}' if it exists
+      if: ${{ github.ref_type != 'tag' }}
       env:
         GH_TOKEN: ${{ github.token }}
       run: |
@@ -105,7 +103,7 @@ jobs:
         tag: "${{ env.tag_name }}"
         file: "./gohls-*-${{ env.tag_name }}.tar.gz"
         file_glob: true
-        prerelease: true
+        prerelease: ${{ github.ref_type != 'tag' }}
         release_name: "${{ env.tag_name }}"
         body: "The ${{ env.tag_name }} release."
 
