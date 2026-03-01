@@ -21,6 +21,7 @@ function make_release() {
 	GOOS=$2
 	GOARCH=$3
 	SUFFIX=$4
+	EXTRA_ENV=${5:-}
 	RELEASE_PATH=build/gohls-$NAME-${VERSION}
 	RELEASE_FILE=gohls-$NAME-${VERSION}.tar.gz
 	mkdir $RELEASE_PATH
@@ -29,7 +30,7 @@ function make_release() {
 	echo $GOOS
 	echo $GOARCH
 	cat internal/buildinfo/buildinfo.go.in | sed "s/##VERSION##/${VERSION}/g" | sed "s/##COMMIT##/$(git rev-parse HEAD)/g" | sed "s/##BUILD_TIME##/$TIME/g" > internal/buildinfo/buildinfo.go
-	GOOS="$GOOS" GOARCH="$GOARCH" go build -o $RELEASE_PATH/gohls${SUFFIX} *.go
+	env GOOS="$GOOS" GOARCH="$GOARCH" $EXTRA_ENV go build -o $RELEASE_PATH/gohls${SUFFIX} *.go
 	PREV_WD=$(pwd)
 	cd  $RELEASE_PATH
 	tar cvfz ../$RELEASE_FILE .
@@ -40,7 +41,8 @@ make_release "osx" "darwin" "amd64" ""
 make_release "osx-arm64" "darwin" "arm64" ""
 make_release "linux-386" "linux" "386" ""
 make_release "linux-amd64" "linux" "amd64" ""
-make_release "linux-arm" "linux" "arm" ""
+make_release "linux-armv6" "linux" "arm" "" "GOARM=6"
+make_release "linux-armv7" "linux" "arm" "" "GOARM=7"
 make_release "linux-arm64" "linux" "arm64" ""
 make_release "windows-386" "windows" "386" ".exe"
 make_release "windows-amd64" "windows" "amd64" ".exe"
